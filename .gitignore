@@ -1,2 +1,4 @@
 runtime/
+bin/
 config.yaml
+*.log
