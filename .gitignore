@@ -1,4 +1,5 @@
 runtime/
 bin/
+static/
 config.yaml
 *.log

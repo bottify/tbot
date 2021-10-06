@@ -1,0 +1,3 @@
+[submodule "lib3rd/ZeroBot"]
+	path = lib3rd/ZeroBot
+	url = git@github.com:bottify/ZeroBot.git
