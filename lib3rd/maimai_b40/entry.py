@@ -22,4 +22,6 @@ async def main():
 
 if len(sys.argv) < 3:
     exit()
-asyncio.run(main())
+
+asyncio.get_event_loop().run_until_complete(main())
+
