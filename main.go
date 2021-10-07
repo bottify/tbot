@@ -20,7 +20,8 @@ import (
 )
 
 type Config struct {
-	SuperUsers string `yaml:"super_users"`
+	SuperUsers    string `yaml:"super_users"`
+	CommandPrefix string `yaml:"cmd_prefix"`
 }
 
 func main() {
@@ -35,19 +36,21 @@ func main() {
 		ctx.Send("pong")
 	})
 
-	zero.OnCommand("b40").Handle(func(ctx *zero.Ctx) {
+	zero.OnPrefix("b40").Handle(func(ctx *zero.Ctx) {
 		args := ctx.State["args"].(string)
 		var cmd *exec.Cmd
 		if len(args) > 0 {
-			cmd = exec.Command("python", "lib3rd/maimai_b40/entry.py", "username", args)
+			cmd = exec.Command("python3", "lib3rd/maimai_b40/entry.py", "username", args)
 		} else {
-			cmd = exec.Command("python", "lib3rd/maimai_b40/entry.py", "qq", fmt.Sprint(ctx.Event.Sender.ID))
+			cmd = exec.Command("python3", "lib3rd/maimai_b40/entry.py", "qq", fmt.Sprint(ctx.Event.Sender.ID))
 		}
 		bo := &bytes.Buffer{}
+		be := &bytes.Buffer{}
 		cmd.Stdout = bo
+		cmd.Stderr = be
 		err := cmd.Run()
 		if err != nil {
-			log.Error("spwan python error: ", err)
+			log.Error("spwan python error: ", err, "stderr: ", be.String())
 			ctx.Send("执行出错，请稍后再试...")
 			return
 		}
@@ -68,12 +71,16 @@ func main() {
 			log.Error("parse config.yaml failed! using default! ", err)
 		}
 	}
+	if len(cfg.CommandPrefix) == 0 {
+		cfg.CommandPrefix = "%"
+	}
+
 	log.Infof("using config: %+v", cfg)
 
 	// TODO: read config from cfg
 	zero.Run(zero.Config{
 		NickName:      []string{"tbot"},
-		CommandPrefix: "!",
+		CommandPrefix: cfg.CommandPrefix,
 		SuperUsers:    strings.Split(cfg.SuperUsers, ","),
 		Driver: []zero.Driver{
 			driver.NewWebSocketClient("ws://127.0.0.1:6700", "wTgZb5TsiTqmaOYT"),
