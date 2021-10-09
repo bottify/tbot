@@ -1,12 +1,16 @@
 package epicture
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"tbot/utils"
 	"tbot/utils/db"
+	"tbot/utils/msg"
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -19,6 +23,54 @@ func init() {
 	e := zero.New()
 	e.OnCommand("涩图").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
+		var pic Epicture
+		err := db.DB().Order("random()").Where("upload_from = ?", ctx.Event.GroupID).First(&pic).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.Send("一张涩图都还没有哦...")
+			return
+		} else if err != nil {
+			ctx.Send("执行错误，请联系管理员查看日志")
+			return
+		}
+		p, _ := filepath.Abs(utils.GetConfig().RuntimePath)
+		path := fmt.Sprintf("file://%v/%v", p, pic.Path)
+		ctx.Send(msg.New().Text(fmt.Sprintf("id: %v\n%v", pic.ID, pic.Comment)).Image(path))
+	})
+
+	e.OnCommand("涩图存量").Handle(func(ctx *zero.Ctx) {
+		once.Do(Setup)
+		r := db.DB().Model(&Epicture{}).Select("upload_from, category, count(1) as cnt").Group("category").Having("upload_from = ?", ctx.Event.GroupID)
+		rows, err := r.Rows()
+		defer rows.Close()
+		if err != nil {
+			log.Errorf("query count for group [%v] error: %v", ctx.Event.GroupID, err)
+			ctx.Send("查询出错，请联系管理员查看日志")
+		} else {
+			sb := &bytes.Buffer{}
+			for rows.Next() {
+				var from, category string
+				var cnt int
+				err = rows.Scan(&from, &category, &cnt)
+				if err != nil {
+					log.Errorf("scan row error: %v", err)
+					continue
+				}
+				log.Debugf("scaned: [%v %v %v]", from, category, cnt)
+				sb.WriteString("\n")
+				sb.WriteString(fmt.Sprintf("%v: %v 张", category, cnt))
+			}
+			if sb.Len() == 0 {
+				ctx.Send("目前还没有任何一张涩图...")
+				return
+			}
+			prefix := ""
+			if ctx.Event.DetailType == "group" {
+				prefix = "你群的"
+			} else if ctx.Event.DetailType == "private" {
+				prefix = "你的"
+			}
+			ctx.Send(fmt.Sprintf("%v涩图存量：%v", prefix, sb.String()))
+		}
 	})
 
 	e.OnCommand("上传涩图").Handle(func(ctx *zero.Ctx) {
