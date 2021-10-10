@@ -25,6 +25,20 @@ var once sync.Once
 
 func init() {
 	e := zero.New()
+
+	e.OnCommand("涩图帮助").Handle(func(ctx *zero.Ctx) {
+		once.Do(Setup)
+		var sb strings.Builder
+		sb.WriteString("涩图 - epic(ture) v0.3\n")
+		sb.WriteString("// tag, comment 功能绝赞开发中...\n")
+		sb.WriteString("----------------------------\n")
+		sb.WriteString("%涩图      \t来一份随机涩图\n")
+		sb.WriteString("%涩图存量  \t看看库存\n")
+		sb.WriteString("%上传涩图  \t上传同一条消息内的图片(移动端可在发送图片时上滑弹出文本输入)\n")
+		sb.WriteString("          \t也可以引用别人发的图片消息或者转发消息来上传\n")
+		ctx.Send(sb.String())
+	})
+
 	e.OnCommand("涩图").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
 		var pic Epicture
@@ -82,6 +96,7 @@ func init() {
 	})
 
 	e.OnMessage(rules.CommandWithReply("上传涩图")).Handle(func(ctx *zero.Ctx) {
+		once.Do(Setup)
 		for _, msg := range ctx.Event.Message {
 			if msg.Type == "reply" {
 				id, _ := strconv.Atoi(msg.Data["id"])
