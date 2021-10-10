@@ -24,7 +24,11 @@ func init() {
 	e.OnCommand("涩图").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
 		var pic Epicture
-		err := db.DB().Order("random()").Where("upload_from = ?", ctx.Event.GroupID).First(&pic).Error
+		query := db.DB().Order("random()").Where("upload_from = ?", ctx.Event.GroupID)
+		if ctx.Event.DetailType == "private" {
+			query = query.Where("uploader_id = ?", ctx.Event.Sender.ID)
+		}
+		err := query.First(&pic).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.Send("一张涩图都还没有哦...")
 			return
