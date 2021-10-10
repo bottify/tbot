@@ -80,7 +80,9 @@ func init() {
 	e.OnCommand("上传涩图").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
 		cnt, succ := 0, 0
+		log.Debug("receive msg segment len ", len(ctx.Event.Message))
 		for _, msg := range ctx.Event.Message {
+			log.Debug("segment: ", msg.Type, msg.Data)
 			if msg.Type == "image" {
 				file, ok := msg.Data["file"]
 				if ok {
