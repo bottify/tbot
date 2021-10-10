@@ -29,13 +29,11 @@ func init() {
 	e.OnCommand("涩图帮助").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
 		var sb strings.Builder
-		sb.WriteString("涩图 - epic(ture) v0.3\n")
-		sb.WriteString("// tag, comment 功能绝赞开发中...\n")
-		sb.WriteString("----------------------------\n")
-		sb.WriteString("%涩图      \t来一份随机涩图\n")
-		sb.WriteString("%涩图存量  \t看看库存\n")
-		sb.WriteString("%上传涩图  \t上传同一条消息内的图片(移动端可在发送图片时上滑弹出文本输入)\n")
-		sb.WriteString("          \t也可以引用别人发的图片消息或者转发消息来上传\n")
+		sb.WriteString("涩图 - epic(ture) v0.3  // tag, comment 功能绝赞开发中...\n")
+		sb.WriteString("-------------- 目前指令 ---------------\n")
+		sb.WriteString("%涩图        来一份你群的随机涩图\n")
+		sb.WriteString("%涩图存量    看看库存\n")
+		sb.WriteString("%上传涩图    上传同一条消息内的图片(移动端可在发送图片时上滑弹出文本输入)，也可以通过[引用]别人发的图片消息或者转发消息来上传\n")
 		ctx.Send(sb.String())
 	})
 
@@ -48,7 +46,11 @@ func init() {
 		}
 		err := query.First(&pic).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.Send("一张涩图都还没有哦...")
+			if ctx.Event.DetailType == "group" {
+				ctx.Send("你群现在还一张涩图都还没有，不如先用上传涩图来点?")
+			} else {
+				ctx.Send("你现在还一张涩图都还没有，不如先用上传涩图来点?")
+			}
 			return
 		} else if err != nil {
 			ctx.Send("执行错误，请联系管理员查看日志")
@@ -81,15 +83,15 @@ func init() {
 				sb.WriteString("\n")
 				sb.WriteString(fmt.Sprintf("%v: %v 张", category, cnt))
 			}
-			if sb.Len() == 0 {
-				ctx.Send("目前还没有任何一张涩图...")
-				return
-			}
 			prefix := ""
 			if ctx.Event.DetailType == "group" {
 				prefix = "你群的"
 			} else if ctx.Event.DetailType == "private" {
 				prefix = "你的"
+			}
+			if sb.Len() == 0 {
+				ctx.Send(fmt.Sprintf("%v目前还没有任何一张涩图...", prefix))
+				return
 			}
 			ctx.Send(fmt.Sprintf("%v涩图存量：%v", prefix, sb.String()))
 		}
