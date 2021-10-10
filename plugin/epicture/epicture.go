@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"tbot/utils"
 	"tbot/utils/db"
 	"tbot/utils/msg"
+	"tbot/utils/rules"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
 	"gorm.io/gorm"
 )
 
@@ -77,30 +81,73 @@ func init() {
 		}
 	})
 
-	e.OnCommand("上传涩图").Handle(func(ctx *zero.Ctx) {
-		once.Do(Setup)
-		cnt, succ := 0, 0
-		log.Debug("receive msg segment len ", len(ctx.Event.Message))
+	e.OnMessage(rules.CommandWithReply("上传涩图")).Handle(func(ctx *zero.Ctx) {
 		for _, msg := range ctx.Event.Message {
-			log.Debug("segment: ", msg.Type, msg.Data)
-			if msg.Type == "image" {
-				file, ok := msg.Data["file"]
-				if ok {
-					if err := SaveOneImageByFile(ctx, file); err == nil {
-						succ++
+			if msg.Type == "reply" {
+				id, _ := strconv.Atoi(msg.Data["id"])
+				actual_msg := ctx.GetMessage(int64(id))
+				if actual_msg.Elements != nil && len(actual_msg.Elements) > 0 {
+					cnt, succ := 0, 0
+					if actual_msg.Elements[0].Type != "forward" {
+						log.Debug("parsed replyed msg of: ", actual_msg.Elements)
+						cnt, succ = SaveImageInMessage(ctx, actual_msg.Elements)
 					} else {
-						log.Errorf("SaveOneImageByFile failed, file [%v] err %v", file, err)
+						msgs := message.Message{}
+						data := ctx.GetForwardMessage(actual_msg.Elements[0].Data["id"])
+						data.Get("messages").ForEach(func(_, value gjson.Result) bool {
+							msgs = append(msgs, message.ParseMessageFromArray(value.Get("content"))...)
+							return true
+						})
+						log.Debug("parsed replyed forwarded msg id, parsed msg len %v", len(msgs))
+						cnt, succ = SaveImageInMessage(ctx, msgs)
 					}
+					if cnt == 0 {
+						ctx.Send("？没识别到任何一张图")
+					} else {
+						ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张", cnt, succ))
+					}
+					return
+				} else {
+					log.Errorf("get reply msg failed! src [%v] id [%v] target [%+v]", id, msg, id, actual_msg)
 				}
-				cnt++
+			} else {
+				continue
 			}
 		}
+		log.Error("logic error, unexpected handler call with msg: ", ctx.Event.RawMessage)
+		ctx.Send("发生内部逻辑错误")
+	})
+
+	e.OnCommand("上传涩图").Handle(func(ctx *zero.Ctx) {
+		once.Do(Setup)
+		cnt, succ := SaveImageInMessage(ctx, ctx.Event.Message)
 		if cnt == 0 {
-			ctx.Send("? 图来")
+			ctx.Send("？没识别到任何一张图")
 		} else {
-			ctx.Send(fmt.Sprintf("一共识别出 %v 张涩图，成功上传 %v 张", cnt, succ))
+			ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张", cnt, succ))
 		}
 	})
+}
+
+func SaveImageInMessage(ctx *zero.Ctx, msg message.Message) (cnt int, succ int) {
+	log.Debug("handle real msg segment len ", len(ctx.Event.Message))
+	cnt, succ = 0, 0
+	for _, msg := range msg {
+		log.Debug("segment: ", msg.Type, msg.Data)
+		if msg.Type == "image" {
+			file, ok := msg.Data["file"]
+			if ok {
+				if err := SaveOneImageByFile(ctx, file); err == nil {
+					succ++
+				} else {
+					log.Errorf("SaveOneImageByFile failed, file [%v] err %v", file, err)
+				}
+			}
+			cnt++
+		}
+	}
+	log.Info("SaveImageInMessage msg cnt %v img %v succ %v", len(msg), cnt, succ)
+	return cnt, succ
 }
 
 type Epicture struct {
