@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
@@ -15,7 +17,10 @@ import (
 	"tbot/utils/db"
 )
 
+var startAt time.Time
+
 func main() {
+	startAt = time.Now()
 	log.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
 		FullTimestamp:   true,
@@ -24,6 +29,9 @@ func main() {
 
 	zero.OnCommand("ping").Handle(func(ctx *zero.Ctx) {
 		ctx.Send("pong")
+	})
+	zero.OnCommand("pingex").Handle(func(ctx *zero.Ctx) {
+		ctx.Send(fmt.Sprint("pong, bot started at ", startAt.Format("2006-01-02 15:04:05")))
 	})
 
 	cfg := utils.GetConfig()
