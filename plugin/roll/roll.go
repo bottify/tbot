@@ -45,6 +45,10 @@ func init() {
 			err = fmt.Errorf("?")
 			return
 		}
+		if cnt > 500 {
+			ctx.Send("你妈")
+			return
+		}
 		n, err = strconv.Atoi(d[1])
 		if err != nil || n <= 0 {
 			err = fmt.Errorf("?")
