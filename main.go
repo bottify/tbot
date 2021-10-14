@@ -1,9 +1,7 @@
 package main
 
 import (
-	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
@@ -18,7 +16,6 @@ import (
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	log.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
 		FullTimestamp:   true,

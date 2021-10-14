@@ -5,12 +5,14 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	zero "github.com/wdvxdr1123/ZeroBot"
 )
 
 func init() {
 	e := zero.New()
+	rand.Seed(time.Now().UnixNano())
 	e.OnCommand("roll").Handle(func(ctx *zero.Ctx) {
 		var err error
 		args := strings.Fields(ctx.State["args"].(string))
@@ -43,7 +45,7 @@ func init() {
 			err = fmt.Errorf("?")
 			return
 		}
-		n, err = strconv.Atoi(d[0])
+		n, err = strconv.Atoi(d[1])
 		if err != nil || n <= 0 {
 			err = fmt.Errorf("?")
 			return
@@ -53,5 +55,18 @@ func init() {
 			result = append(result, fmt.Sprint(rand.Intn(n-1)+1))
 		}
 		ctx.Send(strings.Join(result, " "))
+	})
+
+	e.OnCommand("rand").Handle(func(ctx *zero.Ctx) {
+		args := strings.Fields(ctx.State["args"].(string))
+		if len(args) == 0 {
+			ctx.Send("没东西可 rand")
+			return
+		}
+		if len(args) == 1 {
+			ctx.Send("就一个还 rand？")
+			return
+		}
+		ctx.Send(args[rand.Intn(len(args))])
 	})
 }
