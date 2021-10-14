@@ -30,6 +30,8 @@ func init() {
 		if err == nil {
 			if n <= 0 {
 				err = fmt.Errorf("?")
+			} else if n == 1 {
+				ctx.Send("1")
 			} else {
 				ctx.Send(rand.Intn(int(n-1)) + 1)
 			}
