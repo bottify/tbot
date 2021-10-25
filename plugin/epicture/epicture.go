@@ -42,12 +42,14 @@ func init() {
 		var pic Epicture
 		var query *gorm.DB
 		var extinfo string
-		if zero.SuperUserPermission(ctx) {
+		if utils.Contains(utils.GetConfig().GetSuperUsers(), fmt.Sprint(ctx.Event.Sender.ID)) {
 			arg, _ := ctx.State["args"].(string)
 			id, err := strconv.Atoi(arg)
-			if len(arg) > 0 && err != nil {
+			log.Debug(arg, ";", id, ";", err)
+			if len(arg) > 0 && err == nil {
 				query = db.DB().Where("id = ?", id)
 				extinfo = "[超管特权]"
+				log.Debug("SuperUser mode on, specify hpic id: ", id)
 			}
 		}
 		if query == nil {
