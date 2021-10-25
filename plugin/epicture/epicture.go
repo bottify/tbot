@@ -77,7 +77,8 @@ func init() {
 
 	e.OnCommand("涩图存量").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
-		r := db.DB().Model(&Epicture{}).Select("upload_from, category, count(1) as cnt").Group("category").Having("upload_from = ?", ctx.Event.GroupID)
+		r := db.DB().Model(&Epicture{}).Select("upload_from, category, count(1) as cnt").Group("upload_from, category").Having("upload_from = ?", ctx.Event.GroupID)
+		log.Debug(r.Statement.SQL.String())
 		rows, err := r.Rows()
 		defer rows.Close()
 		if err != nil {
