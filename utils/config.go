@@ -2,7 +2,6 @@ package utils
 
 import (
 	"os"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -22,8 +21,6 @@ func GetConfig() *Config {
 	return &config
 }
 
-var superUsers []string
-
 func (cfg *Config) Init(file string) {
 	cfg_str, err := os.ReadFile(file)
 	if err != nil {
@@ -42,9 +39,4 @@ func (cfg *Config) Init(file string) {
 	if len(cfg.LogLevel) == 0 {
 		cfg.LogLevel = "debug"
 	}
-	superUsers = strings.Split(cfg.SuperUsers, ",")
-}
-
-func (cfg *Config) GetSuperUsers() []string {
-	return superUsers
 }
