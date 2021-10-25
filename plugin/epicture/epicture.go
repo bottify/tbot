@@ -40,9 +40,33 @@ func init() {
 	e.OnCommand("涩图").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
 		var pic Epicture
-		query := db.DB().Order("random()").Where("upload_from = ?", ctx.Event.GroupID)
-		if ctx.Event.DetailType == "private" {
-			query = query.Where("uploader_id = ?", ctx.Event.Sender.ID)
+		isSuperUser := false
+		for _, super_user := range utils.GetConfig().GetSuperUsers() {
+			strid := fmt.Sprint(ctx.Event.Sender.ID)
+			if strid == super_user {
+				isSuperUser = true
+				break
+			}
+		}
+
+		var query *gorm.DB
+		var extinfo string
+		if isSuperUser {
+			arg, _ := ctx.State["args"].(string)
+			if len(arg) > 0 {
+				id, err := strconv.Atoi(arg)
+				if err != nil {
+					query = db.DB().Where("id = ?", id)
+					extinfo = "[超级用户特权]"
+				}
+			}
+		}
+
+		if query == nil {
+			query = db.DB().Order("random()").Where("upload_from = ?", ctx.Event.GroupID)
+			if ctx.Event.DetailType == "private" {
+				query = query.Where("uploader_id = ?", ctx.Event.Sender.ID)
+			}
 		}
 		err := query.First(&pic).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -58,7 +82,7 @@ func init() {
 		}
 		p, _ := filepath.Abs(utils.GetConfig().RuntimePath)
 		path := fmt.Sprintf("file://%v/%v", p, pic.Path)
-		ctx.Send(msg.New().Text(fmt.Sprintf("id: %v\n%v", pic.ID, pic.Comment)).Image(path))
+		ctx.Send(msg.New().Text(fmt.Sprintf("%vid: %v\n%v", extinfo, pic.ID, pic.Comment)).Image(path))
 	})
 
 	e.OnCommand("涩图存量").Handle(func(ctx *zero.Ctx) {
@@ -105,9 +129,10 @@ func init() {
 				actual_msg := ctx.GetMessage(int64(id))
 				if actual_msg.Elements != nil && len(actual_msg.Elements) > 0 {
 					cnt, succ := 0, 0
+					failed_idx := ""
 					if actual_msg.Elements[0].Type != "forward" {
 						log.Debug("parsed replyed msg of: ", actual_msg.Elements)
-						cnt, succ = SaveImageInMessage(ctx, actual_msg.Elements)
+						cnt, succ, failed_idx = SaveImageInMessage(ctx, actual_msg.Elements)
 					} else {
 						msgs := message.Message{}
 						data := ctx.GetForwardMessage(actual_msg.Elements[0].Data["id"])
@@ -116,12 +141,16 @@ func init() {
 							return true
 						})
 						log.Debug("parsed replyed forwarded msg id, parsed msg len %v", len(msgs))
-						cnt, succ = SaveImageInMessage(ctx, msgs)
+						cnt, succ, failed_idx = SaveImageInMessage(ctx, msgs)
 					}
 					if cnt == 0 {
 						ctx.Send("？没识别到任何一张图")
 					} else {
-						ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张", cnt, succ))
+						if cnt == succ {
+							ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张", cnt, succ))
+						} else {
+							ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张，其中第 %v 张上传失败", cnt, succ, failed_idx))
+						}
 					}
 					return
 				} else {
@@ -137,19 +166,24 @@ func init() {
 
 	e.OnCommand("上传涩图").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
-		cnt, succ := SaveImageInMessage(ctx, ctx.Event.Message)
+		cnt, succ, failed_idx := SaveImageInMessage(ctx, ctx.Event.Message)
 		if cnt == 0 {
 			ctx.Send("？没识别到任何一张图")
 		} else {
-			ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张", cnt, succ))
+			if succ != cnt {
+				ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张，其中第 %v 张上传失败", cnt, succ, failed_idx))
+			} else {
+				ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张", cnt, succ))
+			}
 		}
 	})
 }
 
-func SaveImageInMessage(ctx *zero.Ctx, msg message.Message) (cnt int, succ int) {
+func SaveImageInMessage(ctx *zero.Ctx, msg message.Message) (cnt int, succ int, failed_idx string) {
 	log.Debug("handle real msg segment len ", len(ctx.Event.Message))
 	cnt, succ = 0, 0
-	for _, msg := range msg {
+	failed := make([]string, 0)
+	for idx, msg := range msg {
 		log.Debug("segment: ", msg.Type, msg.Data)
 		if msg.Type == "image" {
 			file, ok := msg.Data["file"]
@@ -158,13 +192,14 @@ func SaveImageInMessage(ctx *zero.Ctx, msg message.Message) (cnt int, succ int) 
 					succ++
 				} else {
 					log.Errorf("SaveOneImageByFile failed, file [%v] err %v", file, err)
+					failed = append(failed, fmt.Sprint(idx+1))
 				}
 			}
 			cnt++
 		}
 	}
 	log.Info("SaveImageInMessage msg cnt %v img %v succ %v", len(msg), cnt, succ)
-	return cnt, succ
+	return cnt, succ, strings.Join(failed, ",")
 }
 
 type Epicture struct {
@@ -209,7 +244,8 @@ func runtimePath(relative string) string {
 func SaveOneImageByFile(ctx *zero.Ctx, fileid string) error {
 	result := ctx.GetImage(fileid)
 	path := result.Get("file").String()
-	if len(path) > 0 {
+	info, err := os.Stat(runtimePath(path))
+	if len(path) > 0 && err != nil && info.Size() > 0 {
 		new_path := fmt.Sprintf("data/tbot/%v", genFileIdForSave(path))
 		err := os.Rename(runtimePath(path), runtimePath(new_path))
 		if err != nil {
@@ -224,5 +260,5 @@ func SaveOneImageByFile(ctx *zero.Ctx, fileid string) error {
 		}
 		return err
 	}
-	return fmt.Errorf("get image file failed, empty path")
+	return fmt.Errorf("download image file failed")
 }

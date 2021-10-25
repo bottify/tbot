@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -45,7 +44,7 @@ func main() {
 	zero.Run(zero.Config{
 		NickName:      []string{"tbot"},
 		CommandPrefix: cfg.CommandPrefix,
-		SuperUsers:    strings.Split(cfg.SuperUsers, ","),
+		SuperUsers:    cfg.GetSuperUsers(),
 		Driver: []zero.Driver{
 			driver.NewWebSocketClient("ws://127.0.0.1:6700", "wTgZb5TsiTqmaOYT"),
 		},
