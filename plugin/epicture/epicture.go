@@ -40,9 +40,21 @@ func init() {
 	e.OnCommand("涩图").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
 		var pic Epicture
-		query := db.DB().Order("random()").Where("upload_from = ?", ctx.Event.GroupID)
-		if ctx.Event.DetailType == "private" {
-			query = query.Where("uploader_id = ?", ctx.Event.Sender.ID)
+		var query *gorm.DB
+		var extinfo string
+		if zero.SuperUserPermission(ctx) {
+			arg, _ := ctx.State["args"].(string)
+			id, err := strconv.Atoi(arg)
+			if len(arg) > 0 && err != nil {
+				query = db.DB().Where("id = ?", id)
+				extinfo = "[超管特权]"
+			}
+		}
+		if query == nil {
+			query = db.DB().Order("random()").Where("upload_from = ?", ctx.Event.GroupID)
+			if ctx.Event.DetailType == "private" {
+				query = query.Where("uploader_id = ?", ctx.Event.Sender.ID)
+			}
 		}
 		err := query.First(&pic).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -58,7 +70,7 @@ func init() {
 		}
 		p, _ := filepath.Abs(utils.GetConfig().RuntimePath)
 		path := fmt.Sprintf("file://%v/%v", p, pic.Path)
-		ctx.Send(msg.New().Text(fmt.Sprintf("id: %v\n%v", pic.ID, pic.Comment)).Image(path))
+		ctx.Send(msg.New().Text(fmt.Sprintf("%vid: %v\n%v", extinfo, pic.ID, pic.Comment)).Image(path))
 	})
 
 	e.OnCommand("涩图存量").Handle(func(ctx *zero.Ctx) {

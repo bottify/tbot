@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -13,6 +14,8 @@ type Config struct {
 	CommandPrefix string `yaml:"cmd_prefix"`
 	RuntimePath   string `yaml:"runtime_path"`
 	DBFile        string `yaml:"db_file"`
+
+	superUsers []string `yaml:"-"`
 }
 
 var config Config
@@ -39,4 +42,9 @@ func (cfg *Config) Init(file string) {
 	if len(cfg.LogLevel) == 0 {
 		cfg.LogLevel = "debug"
 	}
+	cfg.superUsers = strings.Split(cfg.SuperUsers, ",")
+}
+
+func (cfg *Config) GetSuperUsers() []string {
+	return cfg.superUsers
 }
