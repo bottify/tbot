@@ -9,10 +9,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"tbot/utils"
 	"tbot/utils/db"
 	"tbot/utils/msg"
 	"tbot/utils/rules"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -22,9 +24,29 @@ import (
 )
 
 var once sync.Once
+var epicCounter sync.Map
+var groupQuota map[int64]int64
 
 func init() {
 	e := zero.New()
+	groupQuota = make(map[int64]int64)
+	groupQuota[328992326] = 15
+
+	go func() {
+		last_hr := -1
+		for {
+			hr := time.Now().Hour()
+			if hr != last_hr {
+				epicCounter.Range(func(k, v interface{}) bool {
+					log.Info("clearing epic counter for group: ", k)
+					atomic.AddInt64(v.(*int64), -1*atomic.LoadInt64(v.(*int64)))
+					return true
+				})
+				last_hr = hr
+			}
+			time.Sleep(time.Second)
+		}
+	}()
 
 	e.OnCommand("涩图帮助").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
@@ -42,6 +64,15 @@ func init() {
 		var pic Epicture
 		var query *gorm.DB
 		var extinfo string
+
+		v, _ := epicCounter.LoadOrStore(ctx.Event.GroupID, new(int64))
+		cnt := atomic.AddInt64(v.(*int64), 1)
+		quota, ok := groupQuota[ctx.Event.GroupID]
+		if ok && cnt > quota {
+			ctx.Send("提示: 不可以色色（你群的涩图额度已经用完，每小时重置）")
+			return
+		}
+
 		if utils.Contains(utils.GetConfig().GetSuperUsers(), fmt.Sprint(ctx.Event.Sender.ID)) {
 			arg, _ := ctx.State["args"].(string)
 			id, err := strconv.Atoi(arg)
