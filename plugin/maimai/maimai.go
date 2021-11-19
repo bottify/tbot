@@ -37,4 +37,24 @@ func init() {
 		ctx.Send(msg.New().ImageBytes(bo.Bytes()))
 	})
 
+	e.OnCommand("底分分析").Handle(func(ctx *zero.Ctx) {
+		qq := fmt.Sprint(ctx.Event.Sender.ID)
+		result := GetMinMaxChart("", qq)
+		if result == nil {
+			ctx.Send("分析失败，请稍后再重试下")
+			return
+		}
+		ctx.Send(fmt.Sprintf(
+			`==== %v 的 maimaiDX 分析报告 ====
+底分: %v
+b15 天花板: %v
+b15 地  板: %v
+b25 天花板: %v
+b25 地  板: %v
+-----
+地  板RA: %v，相当于 %v
+天花板RA: %v，相当于 %v
+`, result.Nickname, result.BaseRa, FormatChartScore(result.DXCeiling), FormatChartScore(result.DXFloor), FormatChartScore(result.SDCeiling), FormatChartScore(result.SDFloor), result.GetFloorRa(), FormatRaSuggestion(result.GetFloorRa()), result.GetCeilingRa(), FormatRaSuggestion(result.GetCeilingRa())))
+		return
+	})
 }
