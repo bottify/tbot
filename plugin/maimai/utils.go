@@ -66,7 +66,7 @@ func FormatChartScore(m map[string]interface{}) string {
 }
 func FormatRaSuggestion(ra float64) string {
 	str := fmt.Sprintf("%v SS+, %v SSS, %v SSS+", FindDifficultyForRaAcc(ra, 99.5), FindDifficultyForRaAcc(ra, 100), FindDifficultyForRaAcc(ra, 100.5))
-	if FindDifficultyForRaAcc(ra, 100) > 14 {
+	if FindDifficultyForRaAcc(ra, 100) >= 14 {
 		str += "（您您您您？"
 	}
 	return str
