@@ -98,7 +98,11 @@ func GetMinMaxChart(username, qq string) *MaimaiAnalysisResult {
 	err = json.Unmarshal(res, &resmap)
 	result := &MaimaiAnalysisResult{}
 
-	result.Nickname = resmap["nickname"].(string)
+	nick, ok := resmap["nickname"].(string)
+	if !ok {
+		return nil
+	}
+	result.Nickname = nick
 	result.BaseRa = resmap["rating"].(float64)
 	dxcharts, _ := resmap["charts"].(map[string]interface{})["dx"]
 	sdcharts, _ := resmap["charts"].(map[string]interface{})["sd"]

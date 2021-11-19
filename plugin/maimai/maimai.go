@@ -38,8 +38,14 @@ func init() {
 	})
 
 	e.OnCommand("底分分析").Handle(func(ctx *zero.Ctx) {
-		qq := fmt.Sprint(ctx.Event.Sender.ID)
-		result := GetMinMaxChart("", qq)
+		args := ctx.State["args"].(string)
+		var result *MaimaiAnalysisResult
+		if len(args) > 0 {
+			result = GetMinMaxChart(args, "")
+		} else {
+			qq := fmt.Sprint(ctx.Event.Sender.ID)
+			result = GetMinMaxChart("", qq)
+		}
 		if result == nil {
 			ctx.Send("分析失败，请稍后再重试下")
 			return
