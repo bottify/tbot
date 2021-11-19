@@ -47,7 +47,7 @@ func init() {
 			result = GetMinMaxChart("", qq)
 		}
 		if result == nil {
-			ctx.Send("分析失败，请稍后再重试下")
+			ctx.Send("分析失败，请稍后再重试下，或者确认下已经绑定了 qq: https://www.diving-fish.com/maimaidx/prober/")
 			return
 		}
 		ctx.Send(fmt.Sprintf(
