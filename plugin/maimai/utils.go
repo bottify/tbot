@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
@@ -32,7 +33,7 @@ func (r *MaimaiAnalysisResult) GetFloorRa() float64 {
 func (r *MaimaiAnalysisResult) GetCeilingRa() float64 {
 	sdra := r.SDCeiling["ra"].(float64)
 	dxra := r.DXCeiling["ra"].(float64)
-	if sdra < dxra {
+	if sdra > dxra {
 		return sdra
 	}
 	return dxra
@@ -67,7 +68,8 @@ func FormatChartScore(m map[string]interface{}) string {
 func FormatRaSuggestion(ra float64) string {
 	str := fmt.Sprintf("%v SS+, %v SSS, %v SSS+", FindDifficultyForRaAcc(ra, 99.5), FindDifficultyForRaAcc(ra, 100), FindDifficultyForRaAcc(ra, 100.5))
 	if FindDifficultyForRaAcc(ra, 100) >= 14 {
-		str += "（您您您您？"
+		dict := []string{"（您您您您您？", "（我超！您还是人吗？？？", "（娇娇！！！！", "（我太崇拜你啦"}
+		str += dict[rand.Intn(len(dict))]
 	}
 	return str
 }
