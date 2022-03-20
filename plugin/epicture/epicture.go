@@ -256,6 +256,16 @@ func SaveOneImageByFile(ctx *zero.Ctx, fileid string) error {
 	result := ctx.GetImage(fileid)
 	path := result.Get("file").String()
 	if len(path) > 0 {
+		if stat, err := os.Stat(runtimePath(path)); err != nil {
+			log.Errorf("fileid [%v] file [%v] stat error: %v", fileid, path, err)
+			return fmt.Errorf("fileid [%v] file [%v] stat error: %v", fileid, path, err)
+		} else {
+			if stat.Size() == 0 {
+				log.Errorf("fileid [%v] file [%v] is empty", fileid, path)
+				return fmt.Errorf("get image file [%v][%v] failed, file size 0", fileid, path)
+			}
+		}
+
 		new_path := fmt.Sprintf("data/tbot/%v", genFileIdForSave(path))
 		err := os.Rename(runtimePath(path), runtimePath(new_path))
 		if err != nil {

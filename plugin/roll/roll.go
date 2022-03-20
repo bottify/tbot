@@ -56,7 +56,7 @@ func init() {
 		}
 		result := make([]string, 0, cnt)
 		for i := 0; i < cnt; i++ {
-			result = append(result, fmt.Sprint(rand.Intn(n)))
+			result = append(result, fmt.Sprint(rand.Intn(n)+1))
 		}
 		ctx.Send(strings.Join(result, " "))
 	})
