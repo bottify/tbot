@@ -101,11 +101,12 @@ func init() {
 			ctx.Send("执行错误，请联系管理员查看日志")
 			return
 		}
+		idx := strings.LastIndex(pic.Path, "/")
+		link := fmt.Sprintf("http://jk.tamce.cn/img/%v", pic.Path[idx+1:idx+17])
+
 		p, _ := filepath.Abs(utils.GetConfig().RuntimePath)
 		path := fmt.Sprintf("file://%v/%v", p, pic.Path)
-		ctx.Send(msg.New().Text(fmt.Sprintf("%vid: %v\n%v", extinfo, pic.ID, pic.Comment)).Image(path))
-		// idx := strings.LastIndex(pic.Path, "/")
-		// link := fmt.Sprintf("http://jk.tamce.cn/img/%v", pic.Path[idx+1:idx+17])
+		ctx.Send(msg.New().Text(fmt.Sprintf("%v[%v]%v\n%v", extinfo, pic.ID, link, pic.Comment)).Image(path))
 		// qr, err := qrcode.Encode(link, qrcode.Low, 256)
 		// ctx.Send(msg.New().Text(fmt.Sprintf("%vid: %v\n%v\n%v", extinfo, pic.ID, link, pic.Comment)).ImageBytes(qr))
 	})
