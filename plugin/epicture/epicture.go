@@ -104,6 +104,10 @@ func init() {
 		p, _ := filepath.Abs(utils.GetConfig().RuntimePath)
 		path := fmt.Sprintf("file://%v/%v", p, pic.Path)
 		ctx.Send(msg.New().Text(fmt.Sprintf("%vid: %v\n%v", extinfo, pic.ID, pic.Comment)).Image(path))
+		// idx := strings.LastIndex(pic.Path, "/")
+		// link := fmt.Sprintf("http://jk.tamce.cn/img/%v", pic.Path[idx+1:idx+17])
+		// qr, err := qrcode.Encode(link, qrcode.Low, 256)
+		// ctx.Send(msg.New().Text(fmt.Sprintf("%vid: %v\n%v\n%v", extinfo, pic.ID, link, pic.Comment)).ImageBytes(qr))
 	})
 
 	e.OnCommand("涩图存量").Handle(func(ctx *zero.Ctx) {
@@ -167,7 +171,11 @@ func init() {
 					if cnt == 0 {
 						ctx.Send("？没识别到任何一张图")
 					} else {
-						ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张", cnt, succ))
+						extra := ""
+						if cnt != succ {
+							extra = "，可能是有图被夹了或者下载出问题了"
+						}
+						ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张%v", cnt, succ, extra))
 					}
 					return
 				} else {
@@ -187,7 +195,11 @@ func init() {
 		if cnt == 0 {
 			ctx.Send("？没识别到任何一张图")
 		} else {
-			ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张", cnt, succ))
+			extra := ""
+			if cnt != succ {
+				extra = "，可能是有图被夹了或者下载出问题了"
+			}
+			ctx.Send(fmt.Sprintf("识别到 %v 张图片，上传成功 %v 张%v", cnt, succ, extra))
 		}
 	})
 }
