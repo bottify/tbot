@@ -3,4 +3,4 @@ bin/
 static/
 config.yaml
 *.log
-deploy.sh
+
