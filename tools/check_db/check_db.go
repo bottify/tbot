@@ -15,13 +15,13 @@ func main() {
 	cfg.Init("config.yaml")
 	db.InitDB()
 	query := db.DB().Model(&epicture.Epicture{})
-	log.Printf("Info total %v records", query.RowsAffected)
 	rows, err := query.Rows()
 	defer rows.Close()
 	if err != nil {
 		log.Fatal(err)
 		panic(err)
 	}
+	var groupPics map[int64](map[string]uint) = make(map[int64](map[string]uint))
 	for rows.Next() {
 		var pic epicture.Epicture
 		db.DB().ScanRows(rows, &pic)
@@ -40,6 +40,15 @@ func main() {
 			log.Printf("ERR %v %v size is 0", pic.ID, pic.Path)
 			continue
 		}
-		log.Printf("OK %v %v size %v", pic.ID, pic.Path, info.Size())
+		if _, ok := groupPics[pic.UploadFrom]; !ok {
+			groupPics[pic.UploadFrom] = make(map[string]uint)
+		}
+		pics := groupPics[pic.UploadFrom]
+		if existed_pic, ok := pics[pic.Path]; ok {
+			log.Printf("WARN %v %v existed for group %v previous %v", pic.ID, pic.Path, pic.UploadFrom, existed_pic)
+		} else {
+			pics[pic.Path] = pic.ID
+		}
+		log.Printf("OK %v %v group %v size %v", pic.ID, pic.Path, pic.UploadFrom, info.Size())
 	}
 }
