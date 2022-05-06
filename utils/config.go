@@ -16,6 +16,7 @@ type Config struct {
 	CommandPrefix string `yaml:"cmd_prefix"`
 	RuntimePath   string `yaml:"runtime_path"`
 	DBFile        string `yaml:"db_file"`
+	ApiTimeout    int64  `yaml:"api_timeout"`
 
 	superUsers []string `yaml:"-"`
 	inited     bool
@@ -44,6 +45,9 @@ func (cfg *Config) Init(file string) {
 	}
 	if len(cfg.LogLevel) == 0 {
 		cfg.LogLevel = "debug"
+	}
+	if cfg.ApiTimeout == 0 {
+		cfg.ApiTimeout = 30
 	}
 	cfg.superUsers = strings.Split(cfg.SuperUsers, ",")
 

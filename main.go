@@ -46,7 +46,7 @@ func main() {
 		CommandPrefix: cfg.CommandPrefix,
 		SuperUsers:    cfg.GetSuperUsers(),
 		Driver: []zero.Driver{
-			driver.NewWebSocketClient("ws://127.0.0.1:6700", "wTgZb5TsiTqmaOYT"),
+			driver.NewWebSocketClient("ws://127.0.0.1:6700", "wTgZb5TsiTqmaOYT", cfg.ApiTimeout),
 		},
 	})
 	select {}
