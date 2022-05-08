@@ -81,7 +81,7 @@ func main() {
 			continue
 		}
 		item := &epicture.Epicture{
-			Path:       fmt.Sprintf("data/tbot/%v.%v", md5str, suffix),
+			Path:       fmt.Sprintf("data/tbot/%v%v", md5str, suffix),
 			UploadFrom: *group,
 			UploaderID: *uploader,
 		}
@@ -90,6 +90,6 @@ func main() {
 			log.Printf("ERR %v insert db failed: %v", img, err)
 			continue
 		}
-		log.Printf("OK id %v %v -> %v", item.ID, img, fmt.Sprintf("data/tbot/%v.%v", md5str, suffix))
+		log.Printf("OK id %v %v -> %v", item.ID, img, fmt.Sprintf("data/tbot/%v%v", md5str, suffix))
 	}
 }
