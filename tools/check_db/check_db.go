@@ -11,8 +11,17 @@ import (
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: check_db <config>")
+		os.Exit(0)
+	}
+
 	cfg := utils.GetConfig()
-	cfg.Init("config.yaml")
+	err := cfg.Init(os.Args[1])
+	if err != nil {
+		log.Fatalf("error init config [%v]: %v", os.Args[1], err)
+		os.Exit(1)
+	}
 	db.InitDB()
 	query := db.DB().Model(&epicture.Epicture{})
 	rows, err := query.Rows()

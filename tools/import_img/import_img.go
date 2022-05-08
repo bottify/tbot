@@ -19,6 +19,7 @@ import (
 var fileList = flag.String("list", "", "file list")
 var group = flag.Int64("group", 0, "group")
 var uploader = flag.Int64("uploader", 0, "uploader")
+var config = flag.String("config", "config.yaml", "config")
 
 func FileMD5(filePath string) (string, error) {
 	file, err := os.Open(filePath)
@@ -39,7 +40,11 @@ func main() {
 	}
 
 	cfg := utils.GetConfig()
-	cfg.Init("config.yaml")
+	err := cfg.Init(*config)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
 	db.InitDB()
 
 	file, err := os.OpenFile(*fileList, os.O_RDONLY, 0664)

@@ -28,14 +28,16 @@ func GetConfig() *Config {
 	return &config
 }
 
-func (cfg *Config) Init(file string) {
+func (cfg *Config) Init(file string) error {
 	cfg_str, err := os.ReadFile(file)
 	if err != nil {
 		log.Errorf("open [%v] failed! %v", file, err)
+		return err
 	} else {
 		err = yaml.Unmarshal(cfg_str, cfg)
 		if err != nil {
 			log.Errorf("parse [%v] failed! %v", file, err)
+			return err
 		}
 	}
 
@@ -51,11 +53,13 @@ func (cfg *Config) Init(file string) {
 	}
 	cfg.superUsers = strings.Split(cfg.SuperUsers, ",")
 
+	log.Info("will mkdir: ", fmt.Sprintf("%v/data/tbot", cfg.RuntimePath))
 	err = os.MkdirAll(fmt.Sprintf("%v/data/tbot", cfg.RuntimePath), os.FileMode(0770))
 	if err != nil {
 		log.Error("mkdir: ", err)
 	}
 	cfg.inited = true
+	return nil
 }
 
 func (cfg *Config) GetDataPath(filename string) string {
