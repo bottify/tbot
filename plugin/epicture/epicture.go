@@ -25,12 +25,13 @@ import (
 
 var once sync.Once
 var epicCounter sync.Map
-var groupQuota map[int64]int64
+
+// var groupQuota map[int64]int64
 
 func init() {
 	e := zero.New()
-	groupQuota = make(map[int64]int64)
-	groupQuota[328992326] = 15
+	// groupQuota = make(map[int64]int64)
+	// groupQuota[328992326] = 15
 
 	go func() {
 		last_hr := -1
@@ -67,7 +68,8 @@ func init() {
 
 		v, _ := epicCounter.LoadOrStore(ctx.Event.GroupID, new(int64))
 		cnt := atomic.AddInt64(v.(*int64), 1)
-		quota, ok := groupQuota[ctx.Event.GroupID]
+		// quota, ok := groupQuota[ctx.Event.GroupID]
+		quota, ok := utils.GetConfig().GetGroupEpicQuota(ctx.Event.GroupID)
 		if ok && cnt > quota {
 			ctx.Send("提示: 不可以色色（你群的涩图额度已经用完，每小时重置）")
 			return
