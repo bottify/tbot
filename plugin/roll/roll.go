@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"tbot/utils/msg"
 	"time"
 
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -55,10 +56,18 @@ func init() {
 			return
 		}
 		result := make([]string, 0, cnt)
+		sum := 0
 		for i := 0; i < cnt; i++ {
-			result = append(result, fmt.Sprint(rand.Intn(n)+1))
+			cur := rand.Intn(n) + 1
+			sum = sum + cur
+			result = append(result, fmt.Sprint(cur))
 		}
-		ctx.Send(strings.Join(result, " "))
+		if cnt > 1 {
+			ctx.Send(fmt.Sprintf("roll %vd%v = %v\n[%v]", cnt, n, sum, strings.Join(result, " ")))
+		} else {
+			ctx.Send(fmt.Sprintf("roll %vd%v = %v", cnt, n, sum))
+		}
+
 	})
 
 	e.OnCommand("rand").Handle(func(ctx *zero.Ctx) {

@@ -1,6 +1,6 @@
 #!/bin/bash
-git pull origin master --force
-git submodule update
+#git pull origin master --force
+#git submodule update
 source /opt/rh/devtoolset-7/enable
 mkdir bin 2>/dev/null
 go build -o bin/ .

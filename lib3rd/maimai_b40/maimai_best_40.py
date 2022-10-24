@@ -201,6 +201,7 @@ class DrawBest(object):
         rankPic = 'D C B BB BBB A AA AAA S Sp SS SSp SSS SSSp'.split(' ')
         comboPic = ' FC FCp AP APp'.split(' ')
         imgDraw = ImageDraw.Draw(img)
+        notExistId = set()
         for num in range(0, len(sdBest)):
             i = num // 5
             j = num % 5
@@ -208,6 +209,7 @@ class DrawBest(object):
             pngPath = self.cover_dir + '{0:06d}.png'.format(int(chartInfo.idNum)%10000)
             if not os.path.exists(pngPath):
                 pngPath = self.cover_dir + '1000.png'
+                notExistId.add(int(chartInfo.idNum)%10000)
             temp = Image.open(pngPath).convert('RGB')
             temp = self._resizePic(temp, itemW / temp.size[0])
             temp = temp.crop((0, (temp.size[1] - itemH) / 2, itemW, (temp.size[1] + itemH) / 2))
@@ -255,6 +257,7 @@ class DrawBest(object):
             pngPath = self.cover_dir + '{0:06d}.jpg'.format(int(chartInfo.idNum)%10000)
             if not os.path.exists(pngPath):
                 pngPath = self.cover_dir + '{0:06d}.png'.format(int(chartInfo.idNum)%10000)
+                notExistId.add(int(chartInfo.idNum)%10000)
             if not os.path.exists(pngPath):
                 sys.stderr.write(pngPath + "\n")
                 pngPath = self.cover_dir + '1000.png'
@@ -299,6 +302,11 @@ class DrawBest(object):
             temp = temp.crop((0, (temp.size[1] - itemH) / 2, itemW, (temp.size[1] + itemH) / 2))
             temp = temp.filter(ImageFilter.GaussianBlur(1))
             img.paste(temp, (self.COLOUMS_IMG[j + 6] + 4, self.ROWS_IMG[i + 1] + 4))
+
+        imgLog = open('/srv/tbot/static/mai/not_exist.txt', 'a+')
+        for i in notExistId:
+            imgLog.write('{0:04d}\n'.format(i))
+        imgLog.close()
 
     def draw(self):
         splashLogo = Image.open(self.pic_dir + 'UI_CMN_TabTitle_MaimaiTitle_Ver214.png').convert('RGBA')
