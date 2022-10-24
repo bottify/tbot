@@ -86,8 +86,10 @@ func init() {
 			}
 		}
 		if query == nil {
-			shares, err := db.DB().Model(&EpictureShare{}).Where("to = ?", ctx.Event.GroupID).Rows()
-			defer shares.Close()
+			shares, err := db.DB().Model(&EpictureShare{}).Where("to_id = ?", ctx.Event.GroupID).Rows()
+			if shares != nil {
+				defer shares.Close()
+			}
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				ctx.Send(">_< 发生了一些错误喵")
 				log.Error("query err ", err)
