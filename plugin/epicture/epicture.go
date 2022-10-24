@@ -86,13 +86,30 @@ func init() {
 			}
 		}
 		if query == nil {
-			query = db.DB().Order("random()").Where("upload_from = ?", ctx.Event.GroupID)
+			shares, err := db.DB().Model(&EpictureShare{}).Where("to = ?", ctx.Event.GroupID).Rows()
+			defer shares.Close()
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				ctx.Send(">_< 发生了一些错误喵")
+				log.Error("query err ", err)
+				return
+			}
+			var from_ids = []int64{ctx.Event.GroupID}
+			for shares.Next() {
+				var share EpictureShare
+				db.DB().ScanRows(shares, &share)
+				from_ids = append(from_ids, share.FromID)
+			}
+			query = db.DB().Order("random()").Where("upload_from in ?", from_ids)
 			if ctx.Event.DetailType == "private" {
 				query = query.Where("uploader_id = ?", ctx.Event.Sender.ID)
 			}
 		}
 		err := query.First(&pic).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if len(extinfo) == 0 {
+				ctx.Send("呜喵，这个涩图 id 不存在呢")
+				return
+			}
 			if ctx.Event.DetailType == "group" {
 				ctx.Send("你群现在还一张涩图都还没有，不如先用上传涩图来点?")
 			} else {
@@ -192,6 +209,29 @@ func init() {
 		ctx.Send("发生内部逻辑错误")
 	})
 
+	e.OnCommand("嫖涩图").Handle(func(ctx *zero.Ctx) {
+		once.Do(Setup)
+		arg, _ := ctx.State["args"].(string)
+		gid, err := strconv.ParseInt(arg, 10, 64)
+		if !utils.Contains(utils.GetConfig().GetSuperUsers(), fmt.Sprint(ctx.Event.Sender.ID)) {
+			ctx.Send("该功能只有管理员可以使用!")
+			return
+		}
+		if err != nil {
+			ctx.Send("参数错误，请指定目标群 id")
+			return
+		}
+		err = db.DB().Create(&EpictureShare{
+			FromID: gid,
+			ToID:   ctx.Event.GroupID,
+		}).Error
+		if err != nil {
+			ctx.Send("白嫖失败，请检查日志")
+		} else {
+			ctx.Send(fmt.Sprintf("白嫖成功！之后在你群 roll 的涩图也会包括群 [%v] 的图了！", gid))
+		}
+	})
+
 	e.OnCommand("上传涩图").Handle(func(ctx *zero.Ctx) {
 		once.Do(Setup)
 		cnt, succ := SaveImageInMessage(ctx, ctx.Event.Message)
@@ -238,13 +278,25 @@ type Epicture struct {
 	UploaderID int64 `gorm:"index"`
 }
 
+type EpictureShare struct {
+	gorm.Model
+	FromID int64 `gorm:"index"`
+	ToID   int64 `gorm:"index"`
+}
+
 func Setup() {
 	db := db.DB()
 	err := db.AutoMigrate(&Epicture{})
 	if err != nil {
-		log.Error("db AutoMigrate failed: ", err)
+		log.Error("db AutoMigrate &Epicture failed: ", err)
 	} else {
-		log.Debug("db AutoMigrate &Epicture{} succeed.")
+		log.Debug("db AutoMigrate &Epicture succeed.")
+	}
+	err = db.AutoMigrate(&EpictureShare{})
+	if err != nil {
+		log.Error("db AutoMigrate &EpictureShare failed: ", err)
+	} else {
+		log.Debug("db AutoMigrate &EpictureShare succeed.")
 	}
 	err = os.MkdirAll(fmt.Sprintf("%v/data/tbot", utils.GetConfig().RuntimePath), os.FileMode(0770))
 	if err != nil {
