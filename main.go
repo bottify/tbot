@@ -12,6 +12,7 @@ import (
 	_ "tbot/plugin/epicture"
 	_ "tbot/plugin/maimai"
 	_ "tbot/plugin/roll"
+	_ "tbot/plugin/yuanshen"
 	"tbot/utils"
 	"tbot/utils/db"
 )
